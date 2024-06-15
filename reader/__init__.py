@@ -2,7 +2,7 @@ from .binary_reader import BinaryReader, Endian
 from mathutils import Vector, Quaternion
 
 class Stream(BinaryReader):
-    def __init__(self, buffer: bytearray = ..., endianness: Endian = Endian.LITTLE, encoding='utf-8'):
+    def __init__(self, buffer = bytearray(), endianness: Endian = Endian.LITTLE, encoding='utf-8'):
         super().__init__(buffer, endianness, encoding)
 
     def read_vector(self) -> Vector:
