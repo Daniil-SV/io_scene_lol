@@ -1,9 +1,8 @@
-from ...reader import BinaryReader
+from ...reader import Stream
 from ...logger import Logger
 from ...transform.quantized_quaternion import QuantizedQuaternion
 from ...hashing.elf import Elf
 from .transform_storage import TransformStorage
-import numpy as np
 
 class AnimationAsset:
     Version = 5
@@ -17,7 +16,7 @@ class AnimationAsset:
         self.storage = TransformStorage()
 
     def write(self, write_compressed: bool = False) -> bytes:
-        stream = BinaryReader()
+        stream = Stream()
         
         Logger.info(f"Writing Animation Asset with version - {AnimationAsset.Version}")
         
@@ -32,7 +31,7 @@ class AnimationAsset:
         return bytes(stream.buffer())
     
     def write_uncompressed(self) -> bytes:
-        stream = BinaryReader()
+        stream = Stream()
 
         # Format Token
         stream.write_uint32(0)
@@ -55,7 +54,7 @@ class AnimationAsset:
         palette_buffer_size = 36
         palette_base_offset = stream.pos() + palette_buffer_size + 4
 
-        palette = BinaryReader()
+        palette = Stream()
         #! Vectors
         vectors_position  = palette.pos()
         for vector in self.storage.transforms:

@@ -1,7 +1,7 @@
 
 bl_info = {
-    "name": "League Of Legends Formats",
-    "description": "",
+    "name": "League Of Legends Formats Addon",
+    "description": "Importer and exporter for League of Legends 3D assets",
     "author": "DaniilSV",
     "version": (1, 0),
     "support": "COMMUNITY",
@@ -32,10 +32,11 @@ if "bpy" in locals():
 
 import bpy
 from bpy.types import Operator
-from .animation.exporter import AnimationExporter
+from .blender import *
 
 classes = [
-    AnimationExporter
+    AnimationExporter,
+    SkinnedMeshImporter
 ]
 
 def make_operator(operator: Operator):
@@ -47,6 +48,8 @@ def make_operator(operator: Operator):
 def register():
     for c in classes:
         bpy.utils.register_class(c)
+        
+    bpy.types.TOPBAR_MT_file_import.append(make_operator(SkinnedMeshImporter))
     
     bpy.types.TOPBAR_MT_file_export.append(make_operator(AnimationExporter))
 
@@ -54,6 +57,8 @@ def unregister():
     for c in classes:
         bpy.utils.unregister_class(c)
 
+    bpy.types.TOPBAR_MT_file_import.append(make_operator(SkinnedMeshImporter))
+    
     bpy.types.TOPBAR_MT_file_export.remove(make_operator(AnimationExporter))
 
 if __name__ == "__main__":

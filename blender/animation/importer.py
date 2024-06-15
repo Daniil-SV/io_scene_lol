@@ -9,11 +9,11 @@ from bpy.props import (StringProperty,
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper, axis_conversion
 
-from ..logger import Logger
-from ..reader import BinaryReader
+from ...logger import Logger
+from ...reader import Stream
 
-class Animation_Importer(Operator, ImportHelper):
-    bl_idname = "import_scene.lol"
+class AnimationImporter(Operator, ImportHelper):
+    bl_idname = "import_scene.lol_animation"
     bl_label = "Import LoL Animation"
     bl_description = "Import animation from file to selected skeleton"
     bl_options = { 'REGISTER', 'UNDO' }
@@ -23,13 +23,12 @@ class Animation_Importer(Operator, ImportHelper):
     filter_glob: StringProperty(default=f'*{filename_ext}', options={ 'HIDDEN' })
 
     def __init__(self) -> None:
-        self.logger = Logger(__name__)
         super().__init__()
 
     def execute(self, context: bpy.types.Context):
-        self.logger.execute()
+        Logger.execute(__name__)
         self.import_animation(context)
-        self.logger.final()
+        Logger.final()
 
         return { 'FINISHED' }
     
@@ -47,7 +46,7 @@ class Animation_Importer(Operator, ImportHelper):
             return
         
         file = open(self.filepath, "wb")
-        buffer = BinaryReader(file.read())
+        buffer = Stream(file.read())
         file.close()
 
         

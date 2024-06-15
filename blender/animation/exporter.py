@@ -1,23 +1,16 @@
 import bpy
 from bpy.props import (StringProperty,
-                       BoolProperty,
-                       EnumProperty,
-                       IntProperty,
-                       CollectionProperty)
+                        IntProperty)
 from bpy.types import Operator
 from bpy_extras.io_utils import ExportHelper
-from ..logger import Logger
-from ..reader import BinaryReader
-from ..hashing.elf import Elf
-from ..transform.quantized_quaternion import QuantizedQuaternion
-from ..resources.animation import AnimationAsset
-from ..resources.animation.transform_storage import TransformStorage
+from ...logger import Logger
+from ...resources.animation import AnimationAsset
+from ...resources.animation.transform_storage import TransformStorage
 from mathutils import Vector, Quaternion
-from math import ceil, isclose
 
 class AnimationExporter(Operator, ExportHelper):
     bl_idname = "export_scene.lol_animation"
-    bl_label = "Export LoL Animation"
+    bl_label = "LoL Animation"
     bl_description = "Export animation from selected skeleton to .ANM file"
     bl_options = { 'PRESET' }
 
