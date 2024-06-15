@@ -86,23 +86,25 @@ class AnimationExporter(Operator, ExportHelper):
         self.write_uncompressed_animation(context, object)
 
     def write_uncompressed_animation(self, context: bpy.types.Context, object: bpy.types.Object):
+        joints = object.animation_data.action.groups
         keyframes = [int(keyframe.co.x) for fcurve in object.animation_data.action.fcurves for keyframe in fcurve.keyframe_points]
 
         first_frame = min(keyframes)
         last_frame = max(keyframes) + 1
         frame_count = last_frame - first_frame
         Logger.info(f"Start Frame - {first_frame}; End Frame - {last_frame}; Frame Count - {frame_count}")
-        
-        asset = AnimationAsset(
-            fps = context.scene.render.fps / context.scene.render.fps_base,
-            duration = frame_count
-        )
-        
-        joints = object.animation_data.action.groups
+
+        asset = AnimationAsset()
+        asset.fps = context.scene.render.fps / context.scene.render.fps_base
+        asset.duration = frame_count
         asset.joints = [joint.name for joint in joints]
+        asset.storage.indices_from_count(frame_count, len(joints))
         
         # Step 1. Gathering all transforms to local bank for each joint
         joints_transforms = [TransformStorage() for _ in range(len(joints))] 
+        for transform in joints_transforms:
+            transform.indices_from_count(frame_count, 1)
+        
         for i in range(frame_count):
             Logger.progress("Step 1. Current frame", i, ((frame_count - 1 ) == i))
 
@@ -127,14 +129,14 @@ class AnimationExporter(Operator, ExportHelper):
                     rotation = Quaternion((rotation.y, rotation.z, rotation.w, rotation.x ))
                     translation = Vector((translation.x, translation.z, -translation.y))
                 
-                # Adding transforms to joint-bounded bank
-                joints_transforms[t].add_translation_rough(translation)
-                joints_transforms[t].add_scale_rough(scale)
-                joints_transforms[t].add_rotation_rough(rotation)
+                bank = joints_transforms[t]
+                bank.set_translation_rough(translation, i)
+                bank.set_scale_rough(scale, i)
+                bank.set_rotation_rough(rotation, i)
 
         # Step 2. Packing all transforms to one big bank in asset
-        joints_packed_transforms: list[dict[int, int]] = [dict() for _ in range(len(joints))]
-        joints_packed_rotations: list[dict[int, int]] = [dict() for _ in range(len(joints))]
+        joints_packed_transforms: list[dict[int, int]] = [{} for _ in range(len(joints))]
+        joints_packed_rotations: list[dict[int, int]] = [{} for _ in range(len(joints))]
         for i in range(frame_count):
             Logger.progress("Step 2. Current frame", i, ((frame_count - 1 ) == i))
             
@@ -144,27 +146,26 @@ class AnimationExporter(Operator, ExportHelper):
                 storage = joints_transforms[t]
 
                 # Frame transforms
-                rotation = storage.rotation_indices[i]
-                translation = storage.translation_indices[i]
-                scale = storage.scale_indices[i]
+                translation, scale, rotation = storage.indices[i]
                 
-                if (rotation in packed_rotations):
-                    asset.transformations.rotation_indices.append(packed_rotations[rotation])
-                else:
-                    rotation_index = asset.transformations.add_rotation(storage.rotations[rotation])
-                    packed_rotations[rotation] = rotation_index
-                    
+                elements_offset = (len(joints) * i) + t
                 if (translation in packed_transforms):
-                    asset.transformations.translation_indices.append(packed_transforms[translation])
+                    asset.storage.set_translation_index(packed_transforms[translation], elements_offset)
                 else:
-                    translation_index = asset.transformations.add_translation(storage.transforms[translation])
+                    translation_index = asset.storage.set_translation_approx(storage.transforms[translation], elements_offset)
                     packed_transforms[translation] = translation_index
                     
                 if (scale in packed_transforms):
-                    asset.transformations.scale_indices.append(packed_transforms[scale])
+                    asset.storage.set_scale_index(packed_transforms[scale], elements_offset)
                 else:
-                    scale_index = asset.transformations.add_scale(storage.transforms[scale])
+                    scale_index = asset.storage.set_scale_approx(storage.transforms[scale], elements_offset)
                     packed_transforms[scale] = scale_index
+                    
+                if (rotation in packed_rotations):
+                    asset.storage.set_rotation_index(packed_rotations[rotation], elements_offset)
+                else:
+                    rotation_index = asset.storage.set_rotation_approx(storage.rotations[rotation], elements_offset)
+                    packed_rotations[rotation] = rotation_index
             
             
         data = asset.write()

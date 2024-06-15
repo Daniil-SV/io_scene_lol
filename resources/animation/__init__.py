@@ -1,21 +1,20 @@
 from ...reader import BinaryReader
 from ...logger import Logger
-from mathutils import Vector, Quaternion
 from ...transform.quantized_quaternion import QuantizedQuaternion
 from ...hashing.elf import Elf
 from .transform_storage import TransformStorage
-from math import ceil, isclose
+import numpy as np
 
 class AnimationAsset:
     Version = 5
     Magic = 'r3d2'
     UncompressedDataMagic = 'anmd'
     
-    def __init__(self, fps: int = 30, duration: int = 0) -> None:
-        self.duration = duration
-        self.fps = fps
+    def __init__(self) -> None:
+        self.duration: int = 0
+        self.fps: int = 30
         self.joints: list[str] = []
-        self.transformations = TransformStorage()
+        self.storage = TransformStorage()
 
     def write(self, write_compressed: bool = False) -> bytes:
         stream = BinaryReader()
@@ -59,14 +58,14 @@ class AnimationAsset:
         palette = BinaryReader()
         #! Vectors
         vectors_position  = palette.pos()
-        for vector in self.transformations.transforms:
+        for vector in self.storage.transforms:
             palette.write_float(vector.x)
             palette.write_float(vector.y)
             palette.write_float(vector.z)
 
         #! Rotations
         rotations_position = palette.pos()
-        for rotation in self.transformations.rotations:
+        for rotation in self.storage.rotations:
             for byte in QuantizedQuaternion.compress([rotation.x, rotation.y, rotation.z, rotation.w]):
                 palette.write_uint8(byte)
 
@@ -75,21 +74,23 @@ class AnimationAsset:
         for name in self.joints:
             palette.write_uint32(Elf.lower_hash(name))
 
-        #! Frames
-        frame_elements_offset = 0
+        #! Frame indices
         frame_data_offset = palette.pos()
-        for _ in range(self.duration):
-            for t in range(len(self.joints)):
-                # Translation index
-                palette.write_uint16(self.transformations.translation_indices[frame_elements_offset + t])
-
-                # Scale index
-                palette.write_uint16(self.transformations.scale_indices[frame_elements_offset + t])
-                
-                # Rotation index 
-                palette.write_uint16(self.transformations.rotation_indices[frame_elements_offset + t])
-                
-            frame_elements_offset += len(self.joints)
+        palette.write_bytes(
+            self.storage.indices.tobytes()
+        )
+        #for _ in range(self.duration):
+        #    for t in range(len(self.joints)):
+        #        # Translation index
+        #        palette.write_uint16(self.transformations.translation_indices[frame_elements_offset + t])
+#
+        #        # Scale index
+        #        palette.write_uint16(self.transformations.scale_indices[frame_elements_offset + t])
+        #        
+        #        # Rotation index 
+        #        palette.write_uint16(self.transformations.rotation_indices[frame_elements_offset + t])
+        #        
+        #    frame_elements_offset += len(self.joints)
 
         
         # Name hashes offfset
