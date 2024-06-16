@@ -11,7 +11,7 @@ from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 from pathlib import Path
 from ...resources.skeleton import SkeletonAsset
-from ...resources.mesh import SkinnedMeshAsset
+from ...resources.skinned_mesh import SkinnedMeshAsset
 
 from ...logger import Logger
 
@@ -48,17 +48,17 @@ class SkinnedMeshImporter(Operator, ImportHelper):
         return { 'FINISHED' }
     
     def import_skinned_mesh(self) -> None:
-        mesh = SkinnedMeshAsset()
-        skeleton: SkeletonAsset = SkeletonAsset() if self.import_skeleton else None
-
         dirname = os.path.dirname(self.filepath)
-        
         mesh_filepath = [
             os.path.join(dirname, str(file.name))
             for file in self.files 
             if str(file.name).endswith(".skn")
         ][0]
-
+        
+        mesh = SkinnedMeshAsset()
+        mesh.read(mesh_filepath)
+        
+        skeleton: SkeletonAsset = SkeletonAsset() if self.import_skeleton else None
         if self.import_skeleton:
             skeleton_filepath = ""
             
