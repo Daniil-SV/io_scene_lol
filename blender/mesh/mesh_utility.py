@@ -2,6 +2,7 @@ import bpy
 import numpy as np
 from ...logger import Logger
 from .conversion import DataConversions
+from .material_instance import MeshMaterialInstance
 
 class MeshUtility:
     """"
@@ -51,6 +52,57 @@ class MeshUtility:
         indices: np.ndarray,
         normals: np.ndarray = None,
     ):
+        #if normals is not None:
+        #    normals *= 50000
+        #    normals[:] = np.trunc(normals)
+        #    normals *= (1/50000)
+        #
+        #vertex_fields = [('x', np.float32), ('y', np.float32), ('z', np.float32)] # Position
+        #if normals is not None:
+        #    vertex_fields += [('nx', np.float32), ('ny', np.float32), ('nz', np.float32)]
+        #    
+        #vert_indices = np.array((0,3), dtype=np.uint32)
+        #vert_positions = np.array((0,3), dtype=np.float32)
+        #vert_normals = np.array((0,3), dtype=np.float32)
+        #
+        #for material in materials:
+        #    material_indices = indices[material.indices_offset : material.indices_offset + material.indices_count]
+        #    material_vertices = vertices[material.vertex_offset : material.vertex_offset + material.vertex_count]
+        #    
+        #    if normals is not None:
+        #        material_normals = normals[material.vertex_offset : material.vertex_offset + material.vertex_count]
+        #    
+        #    dots = np.empty(len(vertices), dtype=np.dtype(vertex_fields))
+        #    dots['x'] = material_vertices[:, 0]
+        #    dots['y'] = material_vertices[:, 1]
+        #    dots['z'] = material_vertices[:, 2]
+        #    
+        #    if normals is not None:
+        #        dots['nx'] = material_normals[:, 0]
+        #        dots['ny'] = material_normals[:, 1]
+        #        dots['nz'] = material_normals[:, 2]
+        #        
+        #    unique_dots, inv_indices = np.unique(dots, return_inverse=True)
+#
+        #    material_indices = inv_indices[material_indices]
+#
+        #    material_vertices = np.empty((len(unique_dots), 3), dtype=np.float32)
+        #    material_vertices[:, 0] = unique_dots['x']
+        #    material_vertices[:, 1] = unique_dots['y']
+        #    material_vertices[:, 2] = unique_dots['z']
+        #    
+        #    if normals is not None:
+        #        material_normals = np.empty((len(unique_dots), 3), dtype=np.float32)
+        #        material_normals[:, 0] = unique_dots['nx']
+        #        material_normals[:, 1] = unique_dots['ny']
+        #        material_normals[:, 2] = unique_dots['nz']
+        #    
+        #    vert_indices = np.concatenate(vert_indices, material_indices)
+        #    vert_positions = np.concatenate(vert_positions, material_vertices)
+        #    vert_normals = np.concatenate(vert_normals, material_normals)
+        #    
+        #return vert_positions, vert_indices, vert_normals
+        
         if normals is not None:
             normals *= 50000
             normals[:] = np.trunc(normals)
@@ -90,13 +142,29 @@ class MeshUtility:
     @staticmethod
     def create_primitive(
         name: str,
+        materials: list[MeshMaterialInstance],
         indices: np.ndarray,
         vertices: np.ndarray,
         texcoord: np.ndarray = None,
         normals: np.ndarray = None
     ):
-        Logger.info(f"Creating mesh with name \"{name}\", triangles: {len(indices) // 3}, UV: {texcoord is not None}, Normals: {normals is not None}")
+        Logger.info(f"Creating mesh with name \"{name}\", 
+                    triangles: {len(indices) // 3},
+                    UV: {texcoord is not None},
+                    Normals: {normals is not None}, 
+                    Materials: {len(materials)}")
+        
         primitive = bpy.data.meshes.new(name)
+        
+        material_indices = np.empty(len(indices), dtype=np.uint32)
+        for i, material in enumerate(materials):
+            blender_material = material.produce_material()
+            primitive.materials.append(blender_material)
+            
+            offset = material.indices_offset // 3
+            count = material.indices_count // 3
+        
+            material_indices[offset:offset + count].fill(i)
 
         vertices, faces_indices, normals = MeshUtility.merge_primitive_vertices(
             vertices, indices, normals
@@ -122,6 +190,8 @@ class MeshUtility:
 
         primitive.polygons.foreach_set("loop_start", loop_starts)
         primitive.polygons.foreach_set("vertices", vertex_indices)
+        
+        primitive.polygons.foreach_set('material_index', material_indices)
         
         if texcoord is not None:
             texcoord = texcoord[MeshUtility.squish(indices)]

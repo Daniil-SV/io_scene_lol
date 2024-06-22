@@ -84,17 +84,43 @@ class SkinnedMeshAsset:
         if (vertex_stride % 4 != 0):
             raise ValueError("Vertex stride is not a multiple of 4")
         
-        elements_count = vertex_stride // 4
-        self.vertex_data = np.reshape(
-            np.frombuffer(
+        self.vertex_data = np.frombuffer(
                 stream.buffer(),
-                np.float32,
-                vertices_count * elements_count,
+                self.dtype,
+                vertices_count,
                 stream.pos()
-            ),
-            (vertices_count, elements_count)
         )
         
+    @property
+    def has_color(self):
+        return int(self.vertex_type) >= SkinnedMeshAsset.VertexType.Colored
+    
+    @property
+    def has_tangent(self):
+        return int(self.vertex_type) >= SkinnedMeshAsset.VertexType.Curved
+    
+    @property
+    def dtype(self) -> np.dtype:
+        fields = [
+            ('x', np.float32), ('y', np.float32), ('z', np.float32),                                                # Position
+            ('bone_1', np.ubyte), ('bone_2', np.ubyte), ('bone_3', np.ubyte), ('bone_4', np.ubyte),                 # Bone Weight Index
+            ('weight_1', np.float32), ('weight_2', np.float32), ('weight_3', np.float32), ('weight_4', np.float32), # Bone Weight Influence
+            ('nx', np.float32), ('ny', np.float32), ('nz', np.float32),                                             # Normal
+            ('u', np.float32), ('v', np.float32)                                                                    # Texcoord
+        ]
+        
+        if self.has_color:
+            fields += [
+                ('r', np.ubyte), ('g', np.ubyte), ('b', np.ubyte), ('a', np.ubyte)
+            ]
+        
+        if self.has_tangent:
+            fields += [
+                ('tx', np.float32), ('ty', np.float32), ('tz', np.float32), ('tw', np.float32)
+            ]
+        
+        return np.dtype(fields)
+    
     @property
     def vertices(self) -> np.ndarray:
         array = np.zeros(
@@ -102,11 +128,10 @@ class SkinnedMeshAsset:
             dtype=np.float32
         )
         
-        for i, vertex_descriptor in enumerate(self.vertex_data):
-            array[i][0] = vertex_descriptor[0]
-            array[i][1] = vertex_descriptor[1]
-            array[i][2] = vertex_descriptor[2]
-        
+        array[:, 0] = self.vertex_data["x"]
+        array[:, 1] = self.vertex_data["y"]
+        array[:, 2] = self.vertex_data["z"]
+
         return array
     
     @property
@@ -116,9 +141,8 @@ class SkinnedMeshAsset:
             dtype=np.float32
         )
         
-        for i, vertex_descriptor in enumerate(self.vertex_data):
-            array[i][0] = vertex_descriptor[11]
-            array[i][1] = vertex_descriptor[12]
+        array[:, 0] = self.vertex_data["u"]
+        array[:, 1] = self.vertex_data["v"]
         
         return array
     
@@ -129,9 +153,8 @@ class SkinnedMeshAsset:
             dtype=np.float32
         )
         
-        for i, vertex_descriptor in enumerate(self.vertex_data):
-            array[i][0] = vertex_descriptor[8]
-            array[i][1] = vertex_descriptor[9]
-            array[i][2] = vertex_descriptor[10]
+        array[:, 0] = self.vertex_data["nx"]
+        array[:, 1] = self.vertex_data["ny"]
+        array[:, 2] = self.vertex_data["nz"]
         
         return array

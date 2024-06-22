@@ -1,12 +1,10 @@
+from bpy.types import Material
 from ...reader import Stream
+from ...blender.mesh.material_instance import MeshMaterialInstance
 
-class SkinnedMeshMaterialInstance:
+class SkinnedMeshMaterialInstance(MeshMaterialInstance):
     def __init__(self) -> None:
-        self.name: str = ""
-        self.vertex_count = 0
-        self.vertex_offset = 0
-        self.indices_count = 0
-        self.indices_offset = 0
+        super().__init__()
         
     def read(self, stream: Stream) -> None:
         self.name = stream.read_str()
@@ -21,3 +19,7 @@ class SkinnedMeshMaterialInstance:
         self.vertex_count = stream.read_uint32()
         self.indices_offset = stream.read_uint32()
         self.indices_count = stream.read_uint32()
+    
+    # A little bit of blender in resources module...
+    def produce_material(self) -> Material:
+        return super().produce_material()

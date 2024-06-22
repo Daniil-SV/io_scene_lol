@@ -1,15 +1,5 @@
 import bpy
-
-from bpy.props import (StringProperty,
-                       BoolProperty,
-                       EnumProperty,
-                       IntProperty,
-                       CollectionProperty)
-
-import os
-import bpy
-from bpy.types import Operator
-from bpy_extras.io_utils import ImportHelper
+import numpy as np
 from pathlib import Path
 from ...resources.skeleton import SkeletonAsset
 from ...resources.skinned_mesh import SkinnedMeshAsset
@@ -31,18 +21,22 @@ class LolSceneSkinnedImport:
             self.skeleton = SkeletonAsset()
             self.skeleton.read(config.skeleton_filepath)
 
-    def import_scene(self, context: bpy.types.Context) -> None:
+    def import_primitive(self, context: bpy.types.Context) -> list[bpy.types.Mesh]:
         vertices = self.asset.vertices
         indices = self.asset.indices
         primitive = MeshUtility.create_primitive(
-            f"{self.name}-mesh", 
+            f"{self.name}-mesh",
+            self.asset.materials,
             indices,
             vertices,
             texcoord=self.asset.texcoord,
             normals=self.asset.normals
         )
         
-        obj = bpy.data.objects.new(self.name, primitive)
+        return [bpy.data.objects.new(self.name, primitive)]
+    
+    def import_scene(self, context: bpy.types.Context) -> None:
+        objects = self.import_primitive(context)
         
-        
-        context.scene.collection.objects.link(obj)
+        for mesh in objects:
+            context.scene.collection.objects.link(mesh)
