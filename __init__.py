@@ -45,6 +45,7 @@ def make_operator(operator: Operator):
     return func
 
 
+
 def register():
     for c in classes:
         bpy.utils.register_class(c)
@@ -57,8 +58,7 @@ def unregister():
     for c in classes:
         bpy.utils.unregister_class(c)
 
-    bpy.types.TOPBAR_MT_file_import.append(make_operator(SkinnedMeshImporter))
-    
+    bpy.types.TOPBAR_MT_file_import.remove(make_operator(SkinnedMeshImporter))
     bpy.types.TOPBAR_MT_file_export.remove(make_operator(AnimationExporter))
 
 if __name__ == "__main__":

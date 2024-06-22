@@ -16,7 +16,7 @@ class SkinnedMeshAsset:
         self.materials: list[SkinnedMeshMaterialInstance] = []
         self.indices: np.ndarray = np.array([], dtype=np.uint16)
         self.vertex_type = SkinnedMeshAsset.VertexType.Default
-        self.vertices: np.ndarray = np.array([], dtype=np.float32)
+        self.vertex_data: np.ndarray = np.array([], dtype=np.float32)
         
         self.bounding_box = BoundingBox()
         self.bounding_sphere = BoundingSphere()
@@ -66,13 +66,18 @@ class SkinnedMeshAsset:
             
             self.bounding_sphere.center = stream.read_vector()
             self.bounding_sphere.radius = stream.read_float()
-            
         
-        self.indices = np.frombuffer(
-            stream.buffer(),
-            np.uint16,
-            indices_count,
-            stream.pos()
+        if (indices_count % 3 != 0):
+            raise ValueError("Indices count is not a multiple of 3")
+        
+        self.indices = np.reshape(
+            np.frombuffer(
+                stream.buffer(),
+                np.uint16,
+                indices_count,
+                stream.pos()
+            ),
+            (indices_count // 3, 3)
         )
         stream.seek(indices_count * 2, Whence.CUR)
         
@@ -80,7 +85,7 @@ class SkinnedMeshAsset:
             raise ValueError("Vertex stride is not a multiple of 4")
         
         elements_count = vertex_stride // 4
-        self.vertices = np.reshape(
+        self.vertex_data = np.reshape(
             np.frombuffer(
                 stream.buffer(),
                 np.float32,
@@ -89,3 +94,30 @@ class SkinnedMeshAsset:
             ),
             (vertices_count, elements_count)
         )
+        
+    @property
+    def vertices(self) -> np.ndarray:
+        array = np.zeros(
+            (len(self.vertex_data), 3), 
+            dtype=np.float32
+        )
+        
+        for i, vertex_descriptor in enumerate(self.vertex_data):
+            array[i][0] = vertex_descriptor[0]
+            array[i][1] = vertex_descriptor[1]
+            array[i][2] = vertex_descriptor[2]
+        
+        return array
+    
+    @property
+    def texcoord(self) -> np.ndarray:
+        array = np.zeros(
+            (len(self.vertex_data), 2), 
+            dtype=np.float32
+        )
+        
+        for i, vertex_descriptor in enumerate(self.vertex_data):
+            array[i][0] = vertex_descriptor[11]
+            array[i][1] = vertex_descriptor[12]
+        
+        return array

@@ -7,11 +7,13 @@ from bpy.props import (StringProperty,
                        CollectionProperty)
 
 import os
+import bpy
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 from pathlib import Path
 from ...resources.skeleton import SkeletonAsset
 from ...resources.skinned_mesh import SkinnedMeshAsset
+from ..mesh import MeshUtility
 
 from ...logger import Logger
 
@@ -43,11 +45,11 @@ class SkinnedMeshImporter(Operator, ImportHelper):
     
     def execute(self, context: bpy.types.Context):
         Logger.execute(__name__)
-        self.import_skinned_mesh()
+        self.import_skinned_mesh(context)
         Logger.final()
         return { 'FINISHED' }
     
-    def import_skinned_mesh(self) -> None:
+    def import_skinned_mesh(self, context: bpy.types.Context) -> None:
         dirname = os.path.dirname(self.filepath)
         mesh_filepath = [
             os.path.join(dirname, str(file.name))
@@ -79,7 +81,19 @@ class SkinnedMeshImporter(Operator, ImportHelper):
                 
             skeleton.read(skeleton_filepath)
 
-        self.import_asset(skeleton, mesh)
+        self.import_asset(context, os.path.basename(mesh_filepath), skeleton, mesh)
     
-    def import_asset(self, skeleton: SkeletonAsset, mesh: SkinnedMeshAsset) -> None:
-        pass
+    def import_asset(self, context: bpy.types.Context, basename: str, skeleton: SkeletonAsset, mesh: SkinnedMeshAsset) -> None:
+        vertices = mesh.vertices
+        indices = mesh.indices
+        primitive = MeshUtility.create_primitive(
+            f"{basename}-mesh", 
+            indices,
+            vertices,
+            texcoord=mesh.texcoord
+        )
+        
+        obj = bpy.data.objects.new(basename, primitive)
+        
+        
+        context.scene.collection.objects.link(obj)
