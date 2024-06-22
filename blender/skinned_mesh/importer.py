@@ -15,8 +15,6 @@ from ...resources.skeleton import SkeletonAsset
 from ...resources.skinned_mesh import SkinnedMeshAsset
 from ..mesh.mesh_utility import MeshUtility
 
-from ...logger import Logger
-
 class LolSceneSkinnedImportSettings:
     def __init__(self) -> None:
         self.skeleton_filepath: str = None
@@ -40,7 +38,8 @@ class LolSceneSkinnedImport:
             f"{self.name}-mesh", 
             indices,
             vertices,
-            texcoord=self.asset.texcoord
+            texcoord=self.asset.texcoord,
+            normals=self.asset.normals
         )
         
         obj = bpy.data.objects.new(self.name, primitive)

@@ -121,3 +121,17 @@ class SkinnedMeshAsset:
             array[i][1] = vertex_descriptor[12]
         
         return array
+    
+    @property
+    def normals(self) -> np.ndarray:
+        array = np.zeros(
+            (len(self.vertex_data), 3), 
+            dtype=np.float32
+        )
+        
+        for i, vertex_descriptor in enumerate(self.vertex_data):
+            array[i][0] = vertex_descriptor[8]
+            array[i][1] = vertex_descriptor[9]
+            array[i][2] = vertex_descriptor[10]
+        
+        return array
