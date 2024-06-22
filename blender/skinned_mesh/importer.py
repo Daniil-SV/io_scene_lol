@@ -13,87 +13,37 @@ from bpy_extras.io_utils import ImportHelper
 from pathlib import Path
 from ...resources.skeleton import SkeletonAsset
 from ...resources.skinned_mesh import SkinnedMeshAsset
-from ..mesh import MeshUtility
+from ..mesh.mesh_utility import MeshUtility
 
 from ...logger import Logger
 
-class SkinnedMeshImporter(Operator, ImportHelper):
-    bl_idname = "import_scene.lol_skinned_mesh"
-    bl_label = "LoL Skinned Mesh"
-    bl_description = "Import skinned mesh file to current scene"
-    bl_options = {'PRESET', 'UNDO'}
+class LolSceneSkinnedImportSettings:
+    def __init__(self) -> None:
+        self.skeleton_filepath: str = None
+        self.skin_filepath: str = None
 
-    filename_ext = '.skn'
-    filter_glob: StringProperty(default=f'*.skn;*.skl', options={ 'HIDDEN' })
-    
-    import_skeleton: BoolProperty(
-        name="Import Skeleton",
-        description="Imports skeleton along with mesh, otherwise only mesh will be imported.",
-        default=True
-    )
-    
-    custom_skeleton: BoolProperty(
-        name="Custom Skeleton",
-        description="Uses selected .skl file as a skeleton file if active, otherwise it will use a .skl with same name as .skn",
-        default=False
-    )
-    
-    files: CollectionProperty(
-        type=bpy.types.OperatorFileListElement,
-        options={'HIDDEN', 'SKIP_SAVE'},
-    )
-    
-    def execute(self, context: bpy.types.Context):
-        Logger.execute(__name__)
-        self.import_skinned_mesh(context)
-        Logger.final()
-        return { 'FINISHED' }
-    
-    def import_skinned_mesh(self, context: bpy.types.Context) -> None:
-        dirname = os.path.dirname(self.filepath)
-        mesh_filepath = [
-            os.path.join(dirname, str(file.name))
-            for file in self.files 
-            if str(file.name).endswith(".skn")
-        ][0]
+class LolSceneSkinnedImport:
+    def __init__(self, config: LolSceneSkinnedImportSettings) -> None:
+        self.name = Path(config.skin_filepath).stem
+        self.asset = SkinnedMeshAsset()
+        self.asset.read(config.skin_filepath)
+        self.skeleton: SkeletonAsset  = None
         
-        mesh = SkinnedMeshAsset()
-        mesh.read(mesh_filepath)
-        
-        skeleton: SkeletonAsset = SkeletonAsset() if self.import_skeleton else None
-        if self.import_skeleton:
-            skeleton_filepath = ""
-            
-            if self.custom_skeleton:
-                if skeleton_assets := [
-                    os.path.join(dirname, str(file.name))
-                    for file in self.files
-                    if str(file.name).endswith(".skl")
-                ]:
-                    skeleton_filepath = skeleton_assets[0]
-                else:
-                    raise ValueError("Custom skeleton file is not selected!")
-            else:
-                skeleton_filepath = Path(mesh_filepath).with_suffix(".skl")
+        if config.skeleton_filepath is not None:
+            self.skeleton = SkeletonAsset()
+            self.skeleton.read(config.skeleton_filepath)
 
-            if (not os.path.exists(skeleton_filepath)):
-                raise FileNotFoundError(f"Failed to find .skl file. Trying by path \"{skeleton_filepath}\"")
-                
-            skeleton.read(skeleton_filepath)
-
-        self.import_asset(context, os.path.basename(mesh_filepath), skeleton, mesh)
-    
-    def import_asset(self, context: bpy.types.Context, basename: str, skeleton: SkeletonAsset, mesh: SkinnedMeshAsset) -> None:
-        vertices = mesh.vertices
-        indices = mesh.indices
+    def import_scene(self, context: bpy.types.Context) -> None:
+        vertices = self.asset.vertices
+        indices = self.asset.indices
         primitive = MeshUtility.create_primitive(
-            f"{basename}-mesh", 
+            f"{self.name}-mesh", 
             indices,
             vertices,
-            texcoord=mesh.texcoord
+            texcoord=self.asset.texcoord
         )
         
-        obj = bpy.data.objects.new(basename, primitive)
+        obj = bpy.data.objects.new(self.name, primitive)
         
         
         context.scene.collection.objects.link(obj)
