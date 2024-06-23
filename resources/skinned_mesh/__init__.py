@@ -5,6 +5,7 @@ from ...reader import Stream
 from ...reader.binary_reader import Whence
 from ...transform.bounding_box import BoundingBox
 from ...transform.bounding_sphere import BoundingSphere
+from ...blender.mesh.material_instance import MeshMaterialInstance
 
 class SkinnedMeshAsset:
     class VertexType(IntEnum):
@@ -90,7 +91,33 @@ class SkinnedMeshAsset:
                 vertices_count,
                 stream.pos()
         )
+    
+    def from_material(self, material: MeshMaterialInstance) -> 'SkinnedMeshAsset':
+        mesh = SkinnedMeshAsset()
+        mesh.vertex_type = self.vertex_type
         
+        mesh_material = SkinnedMeshMaterialInstance()
+        mesh_material.indices_count = material.indices_count
+        mesh_material.vertex_count = material.vertex_count
+        mesh.materials = [mesh_material]
+        
+        mesh.vertex_data = np.zeros(
+            (material.vertex_count,), dtype=self.dtype
+        )
+        
+        mesh.indices = np.zeros(
+            (material.indices_count, 3), dtype=np.uint16
+        )
+        
+        indices_offset = material.indices_offset // 3
+        indices_count = material.indices_count // 3
+        
+        mesh.vertex_data = self.vertex_data[material.vertex_offset : material.vertex_offset + material.vertex_count]
+        mesh.indices = self.indices[indices_offset : indices_offset + indices_count]
+        mesh.indices -= material.vertex_offset
+        
+        return mesh
+    
     @property
     def has_color(self):
         return int(self.vertex_type) >= SkinnedMeshAsset.VertexType.Colored

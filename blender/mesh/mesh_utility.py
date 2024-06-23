@@ -52,57 +52,6 @@ class MeshUtility:
         indices: np.ndarray,
         normals: np.ndarray = None,
     ):
-        #if normals is not None:
-        #    normals *= 50000
-        #    normals[:] = np.trunc(normals)
-        #    normals *= (1/50000)
-        #
-        #vertex_fields = [('x', np.float32), ('y', np.float32), ('z', np.float32)] # Position
-        #if normals is not None:
-        #    vertex_fields += [('nx', np.float32), ('ny', np.float32), ('nz', np.float32)]
-        #    
-        #vert_indices = np.array((0,3), dtype=np.uint32)
-        #vert_positions = np.array((0,3), dtype=np.float32)
-        #vert_normals = np.array((0,3), dtype=np.float32)
-        #
-        #for material in materials:
-        #    material_indices = indices[material.indices_offset : material.indices_offset + material.indices_count]
-        #    material_vertices = vertices[material.vertex_offset : material.vertex_offset + material.vertex_count]
-        #    
-        #    if normals is not None:
-        #        material_normals = normals[material.vertex_offset : material.vertex_offset + material.vertex_count]
-        #    
-        #    dots = np.empty(len(vertices), dtype=np.dtype(vertex_fields))
-        #    dots['x'] = material_vertices[:, 0]
-        #    dots['y'] = material_vertices[:, 1]
-        #    dots['z'] = material_vertices[:, 2]
-        #    
-        #    if normals is not None:
-        #        dots['nx'] = material_normals[:, 0]
-        #        dots['ny'] = material_normals[:, 1]
-        #        dots['nz'] = material_normals[:, 2]
-        #        
-        #    unique_dots, inv_indices = np.unique(dots, return_inverse=True)
-#
-        #    material_indices = inv_indices[material_indices]
-#
-        #    material_vertices = np.empty((len(unique_dots), 3), dtype=np.float32)
-        #    material_vertices[:, 0] = unique_dots['x']
-        #    material_vertices[:, 1] = unique_dots['y']
-        #    material_vertices[:, 2] = unique_dots['z']
-        #    
-        #    if normals is not None:
-        #        material_normals = np.empty((len(unique_dots), 3), dtype=np.float32)
-        #        material_normals[:, 0] = unique_dots['nx']
-        #        material_normals[:, 1] = unique_dots['ny']
-        #        material_normals[:, 2] = unique_dots['nz']
-        #    
-        #    vert_indices = np.concatenate(vert_indices, material_indices)
-        #    vert_positions = np.concatenate(vert_positions, material_vertices)
-        #    vert_normals = np.concatenate(vert_normals, material_normals)
-        #    
-        #return vert_positions, vert_indices, vert_normals
-        
         if normals is not None:
             normals *= 50000
             normals[:] = np.trunc(normals)
@@ -148,11 +97,7 @@ class MeshUtility:
         texcoord: np.ndarray = None,
         normals: np.ndarray = None
     ):
-        Logger.info(f"Creating mesh with name \"{name}\", 
-                    triangles: {len(indices) // 3},
-                    UV: {texcoord is not None},
-                    Normals: {normals is not None}, 
-                    Materials: {len(materials)}")
+        Logger.info(f'Creating mesh with name \"{name}\", triangles: {len(indices) // 3}, UV: {texcoord is not None}, Normals: {normals is not None}, Materials: {len(materials)}')
         
         primitive = bpy.data.meshes.new(name)
         
@@ -212,6 +157,6 @@ class MeshUtility:
         if normals is not None:
             primitive.create_normals_split()
             primitive.normals_split_custom_set_from_vertices(normals)
-            primitive.use_auto_smooth = True
+            primitive.use_auto_smooth = False
         
         return primitive

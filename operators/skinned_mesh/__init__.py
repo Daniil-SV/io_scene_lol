@@ -27,6 +27,12 @@ class SkinnedMeshImporter(Operator, ImportHelper):
         default=True
     )
     
+    split_materials: BoolProperty(
+        name="Split Materials",
+        description="Imports each material of asset into seperate object",
+        default=False
+    )
+    
     custom_skeleton: BoolProperty(
         name="Custom Skeleton",
         description="Uses selected .skl file as a skeleton file if active, otherwise it will use a .skl with same name as .skn",
@@ -42,6 +48,7 @@ class SkinnedMeshImporter(Operator, ImportHelper):
         Logger.execute(__name__)
         
         config = LolSceneSkinnedImportSettings()
+        config.split_materials = self.split_materials
         dirname = os.path.dirname(self.filepath)
         config.skin_filepath = [
             os.path.join(dirname, str(file.name))
