@@ -92,8 +92,8 @@ class AnimationExporter(Operator, ExportHelper):
         config.rotation_tolerance = self.rotation_tolerance
         config.transform_tolerance = self.transform_tolerance
         
-        exporter = LolSceneAnimationExporter(context, object, config)
-        exporter.export(context)
+        # Export to file
+        LolSceneAnimationExporter(context, object, config)
         
         Logger.info("Done")
         Logger.final()

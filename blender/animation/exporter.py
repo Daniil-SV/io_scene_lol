@@ -33,6 +33,8 @@ class LolSceneAnimationExporter:
         self.asset.fps = context.scene.render.fps / context.scene.render.fps_base
         self.asset.duration = frame_count
         
+        self.export(context, config)
+        
         
     def export_uncompressed(self, context: bpy.types.Context):
         joints = self.object.animation_data.action.groups
@@ -106,9 +108,9 @@ class LolSceneAnimationExporter:
                     rotation_index = self.asset.storage.set_rotation_approx(storage.rotations[rotation], elements_offset)
                     packed_rotations[rotation] = rotation_index
     
-    def export(self, context: bpy.types.Context) -> None:
+    def export(self, context: bpy.types.Context, config: LolSceneAnimationExportSettings) -> None:
         self.export_uncompressed(context)
 
         data = self.asset.write()
-        with open(self.config.output_path, "wb") as file:
+        with open(config.output_path, "wb") as file:
             file.write(data)
